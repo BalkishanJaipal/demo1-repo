@@ -1,0 +1,37 @@
+[
+  {
+    "driverName": "Driver 1",
+    "age": 30,
+    "availableCity": "New York",
+    "availablePostalcode": "645343",
+    "basicPay": 25.0
+  },
+  {
+    "driverName": "Driver 2",
+    "age": 35,
+    "availableCity": "Los Angeles",
+    "availablePostalcode": "90210",
+    "basicPay": 10.0
+  },
+  {
+    "driverName": "Driver 3",
+    "age": 40,
+    "availableCity": "Chicago",
+    "availablePostalcode": "60601",
+    "basicPay": 11.0
+  },
+  {
+    "driverName": "Driver 4",
+    "age": 28,
+    "availableCity": "Miami",
+    "availablePostalcode": "33101",
+    "basicPay": 26.0
+  },
+  {
+    "driverName": "Driver 5",
+    "age": 45,
+    "availableCity": "New York",
+    "availablePostalcode": "645343",
+    "basicPay": 24.0
+  }
+]

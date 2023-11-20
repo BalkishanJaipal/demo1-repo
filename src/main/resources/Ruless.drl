@@ -1,0 +1,1077 @@
+import com.bkj.demo.Entity.Appointment;
+import com.bkj.demo.Entity.Driver;
+import com.bkj.demo.Entity.DriverAvailableSlot;
+import com.bkj.demo.Entity.Stop;
+import com.bkj.demo.Entity.Workorder;
+import java.util.*;
+global java.util.Date fiveDaysFromNow;
+global List driversWithBasicPayLessThan25;
+global List driversForSpecificWorkOrderCriteria;
+global List workOrdersForEmptyAppointment;
+global List listOfSequencedDrivers;
+global List listOfSequencedWorkorders;
+global List breakAndSequencingWorkordersMap;
+global List<List<Workorder>> groupedWorkOrders;
+
+import function com.bkj.demo.Utilities.DriverComparator.getComparatorForDriver;
+import function com.bkj.demo.Utilities.WorkOrderComparator.getComparatorForWorkorder;
+import com.bkj.demo.Utilities.HelpingClass;
+import com.bkj.demo.Utilities.DateHelper;
+global Map<String, Map<Workorder, List<Driver>>> breakAndSequencingWorkordersMap;
+
+
+
+rule "Select drivers with basicPay < $25 for workorders in next 5 days"
+ when
+      $DateCustom : DateHelper()
+      $fiveDaysFromNow : Date() from new Date($DateCustom.getCurrentDate().getTime() + (5 * 24 * 60 * 60 * 1000))
+      $wo: Workorder(workorderdate.getTime() > $DateCustom.getCurrentDate().getTime(), workorderdate.getTime() < $fiveDaysFromNow.getTime())
+      $d: Driver(basicPay < 25)
+      $driverMap: Map()
+  then
+
+
+    System.out.println("Workorder id: " + $wo.getWorkorderid() + " , Workorder date: " + $wo.getWorkorderdate());
+
+        if (!$driverMap.containsKey($wo)) {
+            $driverMap.put($wo, new ArrayList<Driver>());
+        }
+
+        List<Driver> associatedDrivers = (List<Driver>) $driverMap.get($wo);
+        associatedDrivers.add($d);
+
+        System.out.println("Driver added to the list: " + $d.getDriverName() + " with basicPay: " + $d.getBasicPay());
+
+end
+
+
+rule "Select Drivers in New York or Postal Code 645343"
+when
+    $wo: Workorder($originatorCode: originatorcode, $stops: stops)
+    $stop: Stop(city == "New York", postalcode == "645343") from $stops
+    $d: Driver(availableCity == "New York", availablePostalcode == "645343")
+    eval($originatorCode == "EXPD")
+    $driverMap: Map()
+then
+    System.out.println("Workorder id: " + $wo.getWorkorderid() + " , Workorder date: " + $wo.getWorkorderdate());
+
+    if (!$driverMap.containsKey($wo)) {
+        $driverMap.put($wo, new ArrayList<Driver>());
+    }
+
+    List<Driver> associatedDrivers = (List<Driver>) $driverMap.get($wo);
+    associatedDrivers.add($d);
+
+    System.out.println("Driver added to the list: " + $d.getDriverName());
+end
+
+
+rule "Select workorders with null appointment start time"
+when
+    $wo: Workorder($stops: stops)
+    $stop: Stop($appointments: appointments) from $stops
+    $app: Appointment(scheduledtimestart == null) from $appointments
+    $driverMap: Map()
+then
+    System.out.println("Workorder id: " + $wo.getWorkorderid() + " , Workorder date: " + $wo.getWorkorderdate());
+
+end
+
+
+
+
+
+
+rule "Select drivers for work orders by driver age in descending order"
+   when
+        $wo: List() from collect(Workorder(originatorcode == "EXPD"))
+        $d: List() from collect(Driver())
+
+  then
+        //System.out.println($wo);
+
+        $wo.sort(Comparator.comparing(Workorder::getWorkorderdate));
+        $d.sort(Comparator.comparing(Driver::getAge).reversed());
+
+         List<Workorder> workorders = new ArrayList<Workorder>($wo); // Explicitly cast and create a new ArrayList
+         List<Driver> drivers = new ArrayList<Driver>($d); // Explicitly cast and create a new ArrayList
+
+         workorders.sort(Comparator.comparing(Workorder::getWorkorderdate));
+         drivers.sort(Comparator.comparing(Driver::getAge).reversed());
+
+         Map<Workorder, List<Driver>> workOrderDriverMap = new LinkedHashMap<>();
+
+         for (Workorder workorder : workorders) {
+             workOrderDriverMap.put(workorder, new ArrayList<>(drivers));
+        }
+
+       //  System.out.println(workOrderDriverMap);
+
+        for (Map.Entry<Workorder, List<Driver>> entry : workOrderDriverMap.entrySet()) {
+                Workorder workorder = entry.getKey();
+                List<Driver> driverList = entry.getValue();
+
+                System.out.println("Workorder ID: " + workorder.getWorkorderid());
+                System.out.println("Workorder Date: " + workorder.getWorkorderdate());
+
+               for (Driver driver : driverList) {
+                   System.out.println("Driver Name: " + driver.getDriverName());
+                    System.out.println("Driver Age: " + driver.getAge());
+                }
+            }
+ end
+
+
+
+
+import com.bkj.demo.Entity.Appointment;
+import com.bkj.demo.Entity.Driver;
+import com.bkj.demo.Entity.DriverAvailableSlot;
+import com.bkj.demo.Entity.Stop;
+import com.bkj.demo.Entity.Workorder;
+import java.util.*;
+
+rule "Select workorders with null appointment start time"
+when
+    $wo: Workorder($stops: stops)
+    $stop: Stop($appointments: appointments) from $stops
+    $app: Appointment(scheduledtimestart == null) from $appointments
+    $driverMap: Map()
+then
+    System.out.println("Workorder id: " + $wo.getWorkorderid() + " , Workorder date: " + $wo.getWorkorderdate());
+
+end
+
+
+rule "Select drivers for work orders by driver age in descending order"
+   when
+        $wo: List() from collect(Workorder(originatorcode == "EXPD"))
+        $d: List() from collect(Driver())
+        $driverMap: Map()
+
+  then
+        //System.out.println($wo);
+
+      //  $wo.sort(Comparator.comparing(Workorder::getWorkorderdate));
+     //   $d.sort(Comparator.comparing(Driver::getAge).reversed());
+
+         List<Workorder> workorders = new ArrayList<Workorder>($wo); // Explicitly cast and create a new ArrayList
+         List<Driver> drivers = new ArrayList<Driver>($d); // Explicitly cast and create a new ArrayList
+
+         workorders.sort(Comparator.comparing(Workorder::getWorkorderdate));
+         drivers.sort(Comparator.comparing(Driver::getAge).reversed());
+
+         Map<Workorder, List<Driver>> workOrderDriverMap = new LinkedHashMap<>();
+
+         for (Workorder workorder : workorders) {
+             workOrderDriverMap.put(workorder, new ArrayList<>(drivers));
+        }
+
+       //  System.out.println(workOrderDriverMap);
+
+        for (Map.Entry<Workorder, List<Driver>> entry : workOrderDriverMap.entrySet()) {
+                Workorder workorder = entry.getKey();
+                List<Driver> driverList = entry.getValue();
+
+                System.out.println("Workorder ID: " + workorder.getWorkorderid());
+                System.out.println("Workorder Date: " + workorder.getWorkorderdate());
+
+               for (Driver driver : driverList) {
+                   System.out.println("Driver Name: " + driver.getDriverName());
+                    System.out.println("Driver Age: " + driver.getAge());
+                }
+            }
+ end
+
+
+package com.bkj.demo.Config;
+
+import com.bkj.demo.Entity.Driver;
+import com.bkj.demo.Entity.Workorder;
+import com.bkj.demo.Service.RulesScriptService;
+import com.bkj.demo.Utilities.DateHelper;
+import org.kie.api.KieServices;
+import org.kie.api.builder.*;
+import org.kie.api.runtime.KieContainer;
+import org.kie.api.runtime.KieSession;
+import org.kie.internal.io.ResourceFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import java.io.IOException;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+
+@Configuration
+public class DroolsConfig {
+
+    private static final KieServices kieServices = KieServices.Factory.get();
+
+    private static KieFileSystem getKieFileSystem() {
+        KieFileSystem kieFileSystem = kieServices.newKieFileSystem();
+        kieFileSystem.write(ResourceFactory.newClassPathResource("Rule1.drl"));
+        return kieFileSystem;
+    }
+
+    @Bean
+    public static KieContainer getKieContainer() {
+        KieBuilder kb = kieServices.newKieBuilder(getKieFileSystem());
+        kb.buildAll();
+        KieModule kieModule = kb.getKieModule();
+        return kieServices.newKieContainer(kieModule.getReleaseId());
+    }
+
+    @Bean
+    public KieSession getKieSession() {
+        return getKieContainer().newKieSession();
+    }
+
+
+    public static Map<Workorder, List<Driver>> applyRules(String drlContent, List<Workorder> wo, List<Driver> drivers) throws IOException {
+        if (drlContent == null || wo == null || drivers == null) {
+            throw new IllegalArgumentException("Drl content or object cannot be null");
+        }
+        Map<Workorder, List<Driver>> SelectedDriver = new HashMap<>();
+
+
+        KieSession kiesession = null;
+        kiesession = getKieContainer().newKieSession();
+
+
+        for (Workorder workorder : wo) {
+            kiesession.insert(workorder);
+        }
+
+        for (Driver driver : drivers) {
+            kiesession.insert(driver);
+        }
+        kiesession.insert(SelectedDriver);
+        kiesession.insert(new DateHelper(new Date()));
+        kiesession.fireAllRules();
+
+        return SelectedDriver;
+
+    }
+}
+
+
+package com.bkj.demo.Utilities;
+
+import com.bkj.demo.Entity.Appointment;
+import com.bkj.demo.Entity.Stop;
+import com.bkj.demo.Entity.Workorder;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.*;
+@Service
+public class WorkOrderGenerator {
+
+        public List<Workorder> getWorkorders()
+        {
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(new Date());
+
+            calendar.add(Calendar.DAY_OF_MONTH, 1);
+            Date tomorrow = calendar.getTime();
+
+            calendar.add(Calendar.DAY_OF_MONTH, 1);
+            Date dayAfterTomorrow=  calendar.getTime();
+
+            calendar.add(Calendar.DAY_OF_MONTH, 1);
+            Date thirdDay = calendar.getTime();
+
+            calendar.add(Calendar.DAY_OF_MONTH, 1);
+            Date fourthDay = calendar.getTime();
+
+            calendar.add(Calendar.DAY_OF_MONTH, 1);
+            Date FifthDay=calendar.getTime();
+
+            LocalDateTime now = LocalDateTime.now();
+
+            Set<Stop> stop1 = new HashSet<>();
+            Set<Appointment> appointments = new HashSet<>();
+            appointments.add(new Appointment(now));
+            stop1.add(new Stop("New York","645343",appointments));
+
+            Set<Stop> stop2 = new HashSet<>();
+            Set<Appointment> appointments2 = new HashSet<>();
+            appointments2.add(new Appointment(null));
+            stop2.add(new Stop("New York","645343",appointments2));
+
+
+            List<Workorder> wo = Arrays.asList(
+                    new Workorder(1L, "94850", "EXPD", "BK", tomorrow,stop2),
+                    new Workorder(2L, "94851", "EPD", "alamin", dayAfterTomorrow,stop2),
+                    new Workorder(3L, "94852", "EXPD", "aaditya", FifthDay,stop1)
+            );
+
+            return wo;
+        }
+
+
+    }
+
+
+package com.bkj.demo.Utilities;
+
+import com.bkj.demo.Entity.Driver;
+import com.bkj.demo.Entity.DriverAvailableSlot;
+import org.springframework.stereotype.Service;
+
+import java.sql.Time;
+import java.util.*;
+@Service
+public class DriverGenerator {
+    // Constants for generating random data
+
+
+    public List<Driver> getDrivers() {
+
+      List<Driver> driver =Arrays.asList(new Driver("A","New York","645343",25.0,25),
+              new Driver("B","new york","645343",20.0,35),
+              new Driver("C","New York","645343",15.0,28));
+
+      return  driver;
+    }
+
+
+}
+
+
+
+package com.bkj.demo.Service;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.apache.commons.io.IOUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.util.ResourceUtils;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.List;
+
+@Service
+public class JsonFileReader {
+
+
+
+    public static <T> T getObjectsListFromJsonFile(String fileLocation, JavaType type) {
+        T object = null;
+        try {
+            File fileOpt = ResourceUtils.getFile(ResourceUtils.CLASSPATH_URL_PREFIX + fileLocation);
+            InputStream inputStream = Files.newInputStream(fileOpt.toPath());
+            String jsonString = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.registerModule(new JavaTimeModule());
+            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            object = objectMapper.readValue(jsonString, type);
+        } catch (IOException e) {
+            // Handle the exception as needed
+            e.printStackTrace(); // You can print the exception or log it
+        }
+        return object;
+    }
+
+}
+
+
+
+
+
+package com.bkj.demo.Service;
+
+import com.bkj.demo.Entity.Driver;
+import com.bkj.demo.Entity.Workorder;
+import org.drools.core.base.RuleNameEqualsAgendaFilter;
+import org.kie.api.runtime.KieSession;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.*;
+
+@Service
+public class WorkOrderService {
+
+    @Autowired
+    private KieSession session;
+
+
+    public Map<Workorder,List<Driver>> getDriversWithBasicPayLessThan25(List<Workorder>wo,List<Driver>drivers) {
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(new Date());
+        calendar.add(Calendar.DAY_OF_MONTH, 5);
+        Date fiveDaysFromNow = calendar.getTime();
+        session.setGlobal("fiveDaysFromNow", fiveDaysFromNow);
+
+        Map<Workorder,List<Driver>> workorderDriverList=new HashMap<>();
+        for(Workorder w:wo) {
+            List<Driver> driversWithBasicPayLessThan25 = new ArrayList<>();
+            session.setGlobal("driversWithBasicPayLessThan25", driversWithBasicPayLessThan25);
+            session.insert(w);
+
+
+            for (Driver d : drivers) {
+                session.insert(d);
+            }
+            session.fireAllRules(new RuleNameEqualsAgendaFilter("Select drivers with basicPay < $25 for workorders in next 5 days"));
+
+            List<Driver> temp=(List<Driver>) session.getGlobal("driversWithBasicPayLessThan25");
+            workorderDriverList.put(w, new ArrayList<>(temp));
+
+
+        }
+        session.dispose();
+        return workorderDriverList;
+
+    }
+
+
+
+
+    public Map<Workorder,List<Driver>> getDriversForSpecificWorkOrderCriteria(List<Workorder>wo,List<Driver>drivers) {
+
+
+
+        Map<Workorder,List<Driver>> workorderDriverList=new HashMap<>();
+        for(Workorder w:wo) {
+            List<Driver> driversForSpecificWorkOrderCriteria = new ArrayList<>();
+            session.setGlobal("driversForSpecificWorkOrderCriteria", driversForSpecificWorkOrderCriteria);
+            session.insert(w);
+
+
+            for (Driver d : drivers) {
+                session.insert(d);
+            }
+            session.fireAllRules(new RuleNameEqualsAgendaFilter("Select Drivers for Workorder Specific Criteria"));
+
+            List<Driver> temp=(List<Driver>) session.getGlobal("driversForSpecificWorkOrderCriteria");
+            workorderDriverList.put(w, new ArrayList<>(temp));
+
+
+        }
+        session.dispose();
+        return workorderDriverList;
+
+    }
+
+
+
+    public List<Workorder> getDriversForEmptyAppointment(List<Workorder>wo) {
+
+
+
+        List<Workorder> workorderDriverList=new ArrayList<>();
+        for(Workorder w:wo) {
+            List<Workorder> workOrdersForEmptyAppointment = new ArrayList<>();
+            session.setGlobal("workOrdersForEmptyAppointment", workOrdersForEmptyAppointment);
+            session.insert(w);
+            session.fireAllRules(new RuleNameEqualsAgendaFilter("Select Drivers for appointmentScheduledStarttimeStart is Null"));
+
+        }
+        session.dispose();
+        return workorderDriverList;
+
+    }
+
+
+    public Map<Workorder,Driver> sequenceWorkOrdersAndSelectDrivers(List<Workorder> wo, List<Driver> drivers) {
+
+        Map<Workorder, Driver> assignments = new HashMap<>();
+
+
+        List<Workorder> listOfSequencedWorkorders = new ArrayList<>();
+
+        for (Workorder w : wo) {
+
+            session.setGlobal("listOfSequencedWorkorders", listOfSequencedWorkorders);
+
+            session.insert(w);
+
+            session.fireAllRules(new RuleNameEqualsAgendaFilter("Sequencing Criteria"));
+
+            // Retrieve the updated list of sequenced Workorders from the global variable
+            listOfSequencedWorkorders = (List<Workorder>) session.getGlobal("listOfSequencedWorkorders");
+
+            // Dispose of the session to release resources
+           // session.dispose();
+        }
+
+        List<Driver> listOfSequencedDrivers = new ArrayList<>();
+
+        for (Driver driver:drivers) {
+
+            session.setGlobal("listOfSequencedDrivers",listOfSequencedDrivers);
+
+            session.insert(driver);
+
+            session.fireAllRules(new RuleNameEqualsAgendaFilter("Sequencing Criteria"));
+
+            // Retrieve the updated list of sequenced Workorders from the global variable
+            listOfSequencedDrivers = (List<Driver>) session.getGlobal("listOfSequencedDrivers");
+
+            // Dispose of the session to release resources
+           // session.dispose();
+        }
+
+
+        int workOrderIndex = 0;
+        int driverIndex = 0;
+
+        while (workOrderIndex < listOfSequencedWorkorders.size() && driverIndex < listOfSequencedDrivers.size()) {
+            Workorder workOrder = listOfSequencedWorkorders.get(workOrderIndex);
+            Driver driver = listOfSequencedDrivers.get(driverIndex);
+
+            assignments.put(workOrder, driver);
+
+            workOrderIndex++;
+            driverIndex++;
+        }
+
+        return assignments;
+
+    }
+
+
+
+    public Map<String,Map<Workorder, List<Driver>>> breakAndSequencingWorkOrders(List<Workorder> workorders, List<Driver> drivers) {
+
+       Map<String, Map<Workorder, List<Driver>>> breakAndSequencingWorkordersMap = new HashMap<>();
+       session.setGlobal("breakAndSequencingWorkordersMap",breakAndSequencingWorkordersMap);
+
+        for(Workorder workorder:workorders)
+        {
+
+            session.insert(workorder);
+        }
+        for(Driver driver: drivers)
+        {
+            session.insert(driver);
+        }
+
+
+        session.fireAllRules(new RuleNameEqualsAgendaFilter("break criteria"));
+
+        System.out.println(breakAndSequencingWorkordersMap.size());
+
+        return breakAndSequencingWorkordersMap;
+    }
+
+}
+
+
+package com.bkj.demo.Utilities;
+
+import com.bkj.demo.Entity.Workorder;
+import java.util.Comparator;
+public class WorkOrderComparator {
+
+
+    public static<K> Comparator<Workorder> getComparatorForWorkorder(K key) {
+        return (wo1, wo2) -> {
+            if (key.equals("workorderdate")) {
+                return wo1.getWorkorderdate().compareTo(wo2.getWorkorderdate());
+            } else if (key.equals("originatorcode")) {
+                return wo1.getOriginatorcode().compareTo(wo2.getOriginatorcode());
+            } else if (key.equals("receivercode")) {
+                return wo1.getReceivercode().compareTo(wo2.getReceivercode());
+                // Add more cases for other criteria
+            }
+            else if(key.equals("eta")){
+                return wo1.getEta().compareTo(wo2.getEta());
+            }
+            // Default comparison when the key is not recognized
+            return 0;
+        };
+    }
+
+}
+
+
+package com.bkj.demo.Utilities;
+
+import com.bkj.demo.Entity.Driver;
+import java.util.Comparator;
+public class DriverComparator {
+
+    public static<K> Comparator<Driver> getComparatorForDriver(K key) {
+        return (d1,d2) -> {
+            if (key.equals("age")) {
+                return d1.getAge().compareTo(d2.getAge());
+            } else if (key.equals("driverOfficeCode")) {
+                return d1.getDriverOfficeCode().compareTo(d2.getDriverOfficeCode());
+            } else if (key.equals("availableCity")) {
+                return d1.getAvailableCity().compareTo(d2.getAvailableCity());
+                // Add more cases for other criteria
+            }
+            else if(key.equals("availableState")){
+                return d1.getAvailableState().compareTo(d2.getAvailableState());
+            }
+            // Default comparison when the key is not recognized
+            return 0;
+        };
+    }
+}
+
+
+
+//Helping class
+package com.bkj.demo.Utilities;
+import com.bkj.demo.Entity.Appointment;
+import com.bkj.demo.Entity.Driver;
+import com.bkj.demo.Entity.Stop;
+import com.bkj.demo.Entity.Workorder;
+import org.kie.api.runtime.KieSession;
+import org.springframework.beans.factory.annotation.Autowired;
+import java.util.*;
+import static com.bkj.demo.Utilities.DriverComparator.getComparatorForDriver;
+import static com.bkj.demo.Utilities.WorkOrderComparator.getComparatorForWorkorder;
+
+
+public class HelpingClass {
+    Map<String, Map<Workorder, List<Driver>>> myMap=new HashMap<>();
+
+    public void setMyMap(Map<String, Map<Workorder, List<Driver>>> myMap) {
+        this.myMap = myMap;
+    }
+
+    @Autowired
+    KieSession session;
+
+    public  Boolean checkIfAnyAppointmentIsNull(Set<Appointment> apt)
+    {
+        boolean isNull=true;
+        for(Appointment a:apt)
+        {
+
+            if(a.getScheduledtimestart()==null)
+            {
+                isNull=false;
+                break;
+            }
+        }
+        return isNull;
+    }
+    public <T> List<Driver> sortDrivers(List<Driver> drivers, T key,String order)
+    {
+        if(order=="desc")
+            Collections.sort(drivers,getComparatorForDriver(key).reversed());
+        else
+            Collections.sort(drivers,getComparatorForDriver(key));
+
+        return drivers;
+
+    }
+
+    public <T> List<Workorder> sortWorkorders(List<Workorder> wo, T key,String order)
+    {
+        if(order=="desc")
+            Collections.sort(wo,getComparatorForWorkorder(key).reversed());
+        else
+        {
+            Collections.sort(wo,getComparatorForWorkorder(key));
+        }
+        System.out.println("sorting");
+        return wo;
+
+    }
+
+
+     public <T> List<Workorder> getWorkorderByCriteria(List<Workorder> wo, T property, T key) {
+        List<Workorder> res = new ArrayList<>();
+        if (property.equals("Originatorcode")) {
+            if (key.equals("EXPD")) {
+
+                for (Workorder w : wo) {
+                    if (w.getOriginatorcode() == "EXPD") {
+                        res.add(w);
+                    }
+                }
+            }
+        }
+
+        System.out.println(res.size());
+        return res;
+
+    }
+    public  Map<Workorder,List<Driver>> Assign(List<Workorder> wo, List<Driver> drivers) {
+        Map<Workorder,List<Driver>>AssignedDriversForWorkorder=new HashMap<>();
+        for (Workorder workorder : wo) {
+            // Select drivers for each workorder
+            Set<Stop> stops = workorder.getStops();
+            List<Driver> selectedDrivers = new ArrayList<Driver>();
+            for (Driver driver : drivers) {
+
+                for (Stop s : stops) {
+                    if (driver.getAvailableCity().equals(s.getCity()) &&
+                            driver.getAvailablePostalcode().equals(s.getPostalcode())) {
+                        selectedDrivers.add(driver);
+                    }
+                }
+                AssignedDriversForWorkorder.put(workorder, selectedDrivers);
+
+
+            }
+
+
+        }
+        return AssignedDriversForWorkorder;
+
+    }
+
+
+    public Map<String, List<Workorder>> arrangeWorkorders(List<Workorder> workorders) {
+        Map<String, List<Workorder>> arrangedWorkorders = new HashMap<>();
+
+        for (Workorder workorder : workorders) {
+            String key = workorder.getOriginatorcode() + "  " + workorder.getWorkorderdate();
+
+            // Retrieve or create a list for the given key
+            List<Workorder> workorderList = arrangedWorkorders.computeIfAbsent(key, k -> new ArrayList<>());
+
+            // Add the work order to the list
+            workorderList.add(workorder);
+        }
+        return arrangedWorkorders;
+    }
+    public Map<String, Map<Workorder,List<Driver>>> combine( Map<Workorder,List<Driver>> mp, Map<String, List<Workorder>> arrangedWorkorders)
+    {
+        Map<String, Map<Workorder, List<Driver>> > combinedMap = new HashMap<>();
+        for (Map.Entry<Workorder, List<Driver>> entry : mp.entrySet()) {
+            Workorder workorder = entry.getKey();
+            List<Driver> drive = entry.getValue();
+
+            for (Map.Entry<String, List<Workorder>> workorderEntry : arrangedWorkorders.entrySet()) {
+                String key = workorderEntry.getKey();
+                List<Workorder> workorders = workorderEntry.getValue();
+
+                if (workorders.contains(workorder)) {
+                    // If the workorder is found in the arrangedWorkorders map, add it to the combined map
+                    combinedMap.computeIfAbsent(key, k -> new HashMap<>()).put(workorder, drive);
+                }
+            }
+        }
+        System.out.println("combined");
+
+        return combinedMap;
+    }
+
+
+}
+
+
+
+//controller
+    @PostMapping("/Testing/rule1")
+    public ResponseEntity<?>Rule1(@RequestBody RequestData requestData) throws IOException {
+
+        List<Driver> drivers = requestData.getDrivers();
+        List<Workorder> workorders = requestData.getWorkorders();
+       // System.out.println(workorders);
+        //System.out.println(drivers);
+       // workRepo.saveAll(workorders);
+        //driverRepo.saveAll(drivers);
+        return  ruleService.rules(workorders,drivers);
+    }
+
+    @PostMapping("/Testing/rule2")
+    public ResponseEntity<?>Rule2(@RequestBody RequestData requestData) throws IOException {
+
+        List<Driver> drivers = requestData.getDrivers();
+        List<Workorder> workorders = requestData.getWorkorders();
+        return  ruleService.rules(workorders,drivers);
+    }
+
+    @PostMapping("/Testing/rule3")
+    public ResponseEntity<?>Rule3(@RequestBody RequestData requestData) throws IOException {
+
+        List<Driver> drivers = requestData.getDrivers();
+        List<Workorder> workorders = requestData.getWorkorders();
+        return  ruleService.rules(workorders,drivers);
+    }
+
+    @PostMapping("Testing/rule4")
+    public ResponseEntity<?>Rule4(@RequestBody RequestData requestData) throws IOException {
+
+        List<Driver> drivers = requestData.getDrivers();
+        List<Workorder> workorders = requestData.getWorkorders();
+        return  ruleService.rules(workorders,drivers);
+    }
+
+
+//    @PostMapping("Testing/rule5")
+//    public ResponseEntity<?>Rule5() throws IOException {
+//        return ruleService.rules();
+//    }
+
+
+
+
+rule1
+import com.bkj.demo.Entity.Appointment;
+import com.bkj.demo.Entity.Driver;
+import com.bkj.demo.Entity.DriverAvailableSlot;
+import com.bkj.demo.Entity.Stop;
+import com.bkj.demo.Entity.Workorder;
+import java.util.*;
+import com.bkj.demo.Utilities.DateHelper;
+
+
+rule "Select drivers with basicPay < $25 for workorders in next 5 days"
+ when
+      $DateCustom : DateHelper()
+      $fiveDaysFromNow : Date() from new Date($DateCustom.getCurrentDate().getTime() + (5 * 24 * 60 * 60 * 1000))
+      $wo: Workorder(workorderdate.getTime() > $DateCustom.getCurrentDate().getTime(), workorderdate.getTime() < $fiveDaysFromNow.getTime())
+      $d: Driver(basicPay < 25)
+      $driverMap: Map()
+  then
+
+
+    //System.out.println("Workorder id: " + $wo.getWorkorderid() + " , Workorder date: " + $wo.getWorkorderdate());
+
+        if (!$driverMap.containsKey($wo)) {
+            $driverMap.put($wo, new ArrayList<Driver>());
+        }
+
+        List<Driver> associatedDrivers = (List<Driver>) $driverMap.get($wo);
+        associatedDrivers.add($d);
+
+     //   System.out.println("Driver added to the list: " + $d.getDriverName() + " with basicPay: " + $d.getBasicPay());
+
+end
+
+
+//                "import com.bkj.demo.Entity.Appointment;\n" +
+//                "import com.bkj.demo.Entity.Driver;\n" +
+//                "import com.bkj.demo.Entity.DriverAvailableSlot;\n" +
+//                "import com.bkj.demo.Entity.Stop;\n" +
+//                "import com.bkj.demo.Entity.Workorder;\n" +
+//                "import java.util.*;\n" +
+//                "import com.bkj.demo.Utilities.DateHelper;\n" +
+//                "\n" +
+//                "\n" +
+//                "rule \"Select drivers with basicPay < $25 for workorders in next 5 days\"\n" +
+//                " when\n" +
+//                "     $wo:List(size>0) from collect(Workorder()) \n"+
+//                "     $driverList: List(size>0) from collect(Driver()) \n"+
+//                "        $map: Map() \n"+
+//                "  then\n" +
+//                "for(Object ob:$wo) {\n"+
+//                        "Workorder workorder=(Workorder) ob;\n"+
+//                        "List<Driver> selectedDrivers=new ArrayList<>();\n"+
+//                        "Date woDate=workorder.getWorkorderdate();\n"+
+//                        "if(woDate !=null){\n"+
+//                        "Date currentDate=new Date();\n"+
+//                        "Calendar cal=Calendar.getInstance();\n"+
+//                        "cal.setTime(currentDate);\n"+
+//                        "cal.add(Calendar.DAY_OF_MONTH,5);\n"+
+//                        "Date next5Days=cal.getTime();\n"+
+//                        "if(woDate.before(next5Days) && woDate.after(currentDate)){\n"+
+//                        "for(Object d:$driverList){\n"+
+//                        "Driver driver=(Driver) d;\n"+
+//                        "Double basicPayTh=new Double(25);\n"+
+//                        "if(driver.getBasicPay().compareTo(basicPayTh)<0){\n"+
+//                        "selectedDrivers.add(driver);\n"+ "}\n"+ "}\n"+ "}\n"+ "}\n"+
+//                        "$map.put(workorder,selectedDrivers);\n"+
+//        "}\n"+
+//                "end";
+
+
+
+
+
+
+rule2
+import com.bkj.demo.Entity.Appointment;
+import com.bkj.demo.Entity.Driver;
+import com.bkj.demo.Entity.DriverAvailableSlot;
+import com.bkj.demo.Entity.Stop;
+import com.bkj.demo.Entity.Workorder;
+import java.util.*;
+
+
+
+rule "Select Drivers in New York or Postal Code 645343"
+when
+    $wo: Workorder(originatorcode=="EXPD", $stops: stops)
+    $stop: Stop(city == "New York", postalcode == "645343") from $stops
+    $d: Driver(availableCity == "New York", availablePostalcode == "645343")
+    $driverMap: Map()
+then
+   // System.out.println("Workorder id: " + $wo.getWorkorderid() + " , Workorder date: " + $wo.getWorkorderdate());
+
+    if (!$driverMap.containsKey($wo)) {
+               $driverMap.put($wo, new ArrayList<Driver>());
+           }
+
+           List<Driver> associatedDrivers = (List<Driver>) $driverMap.get($wo);
+           associatedDrivers.add($d);
+
+ //   System.out.println("Driver added to the list: " + $d.getDriverName());
+end
+
+
+rule3
+import com.bkj.demo.Entity.Appointment;
+import com.bkj.demo.Entity.Driver;
+import com.bkj.demo.Entity.DriverAvailableSlot;
+import com.bkj.demo.Entity.Stop;
+import com.bkj.demo.Entity.Workorder;
+import java.util.*;
+
+rule "Select workorders with null appointment start time"
+when
+    $wo: Workorder($stops: stops)
+    $stop: Stop($appointments: appointments) from $stops
+    not Appointment(scheduledtimestart != null) from $appointments
+    $driverMap: Map()
+then
+    if (!$driverMap.containsKey("workordersWithNullAppointmentStartTime")) {
+        $driverMap.put("workordersWithNullAppointmentStartTime", new ArrayList<Workorder>());
+    }
+
+    List<Workorder> workordersWithNullAppointmentStartTime = (List<Workorder>) $driverMap.get("workordersWithNullAppointmentStartTime");
+    workordersWithNullAppointmentStartTime.add($wo);
+
+    System.out.println("Workorders with null appointment start time: " + workordersWithNullAppointmentStartTime);
+end
+
+
+rule4
+import com.bkj.demo.Entity.Appointment;
+import com.bkj.demo.Entity.Driver;
+import com.bkj.demo.Entity.DriverAvailableSlot;
+import com.bkj.demo.Entity.Stop;
+import com.bkj.demo.Entity.Workorder;
+import com.bkj.demo.Utilities.DateHelper;
+import com.bkj.demo.Utilities.WorkOrderDriverPair;
+import java.util.*;
+
+
+rule "Select drivers for work orders by driver age in descending order"
+   when
+       $woList: List() from collect(Workorder(originatorcode == "EXPD"))
+       $dList: List() from collect(Driver())
+       $driverMap: Map()
+   then
+       List<Workorder> workorders = new ArrayList<>($woList);
+       List<Driver> drivers = new ArrayList<>($dList);
+
+       workorders.sort(Comparator.comparing(Workorder::getWorkorderdate));
+       drivers.sort(Comparator.comparing(Driver::getAge).reversed());
+
+       Map<Workorder, List<Driver>> workOrderDriverMap = new LinkedHashMap<>();
+
+       for (Workorder workorder : workorders) {
+           workOrderDriverMap.put(workorder, new ArrayList<>(drivers));
+       }
+
+       for (Map.Entry<Workorder, List<Driver>> entry : workOrderDriverMap.entrySet()) {
+           Workorder workorder = entry.getKey();
+           List<Driver> driverList = entry.getValue();
+
+           if (!$driverMap.containsKey(workorder)) {
+               $driverMap.put(workorder, new ArrayList<Driver>());
+           }
+
+           List<Driver> associatedDrivers = (List<Driver>) $driverMap.get(workorder);
+           associatedDrivers.addAll(driverList);
+       }
+   end
+
+
+rul5
+import com.bkj.demo.Entity.Appointment;
+import com.bkj.demo.Entity.Driver;
+import com.bkj.demo.Entity.DriverAvailableSlot;
+import com.bkj.demo.Entity.Stop;
+import com.bkj.demo.Entity.Workorder;
+import com.bkj.demo.Utilities.DateHelper;
+import com.bkj.demo.Utilities.WorkOrderDriverPair;
+import java.util.*;
+
+
+rule "Break Criteria"
+  when
+     $wo: List(size > 0) from collect(Workorder())
+     $driver: List(size > 0) from collect(Driver())
+     $map: Map()
+   then
+       List<Workorder> filteredWorkorders = new ArrayList<>($wo);
+       filteredWorkorders.sort(Comparator.comparing(Workorder::getWorkorderdate).reversed());
+       List<Driver> filteredDrivers = new ArrayList<>($driver);
+       filteredDrivers.sort(Comparator.comparing(Driver::getAge));
+
+         for (Workorder workorder : filteredWorkorders)
+          {
+              List<Driver> driverListForWorkorder = new ArrayList<>();
+               driverListForWorkorder.addAll(filteredDrivers);
+                $map.put(workorder, driverListForWorkorder);
+            }
+           Map<String, Map<Workorder, List<Driver>>> categorizedWorkorders = new HashMap<>();
+
+          for (Object entry : $map.entrySet()) {
+          Map.Entry<Workorder, List<Driver>> mapEntry = (Map.Entry<Workorder, List<Driver>>) entry;
+
+         Workorder workorder = mapEntry.getKey();
+         List<Driver> drivers = mapEntry.getValue();
+         String categoryValue = workorder.getWorkorderdate().toString();
+          Map<Workorder, List<Driver>> categoryMap = categorizedWorkorders.getOrDefault(categoryValue, new HashMap<>());
+         categoryMap.put(workorder, drivers);\n categorizedWorkorders.put(categoryValue, categoryMap);
+
+     }
+end
+
+
+
+ public Map<Workorder, List<Driver>> executeRules(List<Driver>drivers,List<Workorder> workorders) {
+
+
+      // String ruleScript = rulesScriptService.getRuleScript("workorder","nile","create","validation");   //rule1
+      //  String ruleScript  = rulesScriptService.getRuleScript("workorder2","olusa","create","validation"); //rule2
+      //  String ruleScript = rulesScriptService.getRuleScript("workorder3","olusa","update","validation");   //rule3
+     //   String ruleScript = rulesScriptService.getRuleScript("workorder4","olusa","delete","validation");   //rule4
+      //  String ruleScript = rulesScriptService.getRuleScript("workorder5","olusa","delete","validation");   //rule5
+
+
+
+        Map<Workorder, List<Driver>> selectedDrivers = new HashMap<>();
+
+        List<Object> inputObjects = new ArrayList<>(workorders);
+        inputObjects.addAll(drivers);
+        inputObjects.add(selectedDrivers);
+
+        ruleExecutor.execute(inputObjects, ruleScript);
+        return selectedDrivers;
+    }
+
+
+
+    //    ObjectMapper objectMapper = new ObjectMapper();
+    //   try {
+    //                List<Workorder> workorders = objectMapper.readValue(new File("src/main/resources/Data/Workorder.json"), new TypeReference<List<Workorder>>() {});
+    //                inputObjects.addAll(workorders);
+    //
+    //        } catch (IOException e) {
+    //        e.printStackTrace(); }
+    //
+    //
+    //        try {
+    //            List<Driver> drivers = objectMapper.readValue(new File("src/main/resources/Data/Driver.json"), new TypeReference<List<Driver>>() {});
+    //            inputObjects.addAll(drivers);
+    //
+    //
+    //        } catch (IOException e) {
+    //            e.printStackTrace(); }

@@ -1,0 +1,67 @@
+ [
+    {
+      "workorderid": 1,
+      "workordernumber": "WO001",
+      "originatorcode": "EXPD",
+      "receivercode": "RECV001",
+      "workorderdate": "2023-11-20T14:30:00Z",
+      "stops": [
+        {
+          "city": "New York",
+          "postalcode": "645343"
+
+        },
+        {
+          "city": "New York",
+          "postalcode": "645341"
+
+        }
+      ]
+    },
+    {
+      "workorderid": 2,
+      "workordernumber": "WO002",
+      "originatorcode": "EXPD",
+      "receivercode": "RECV002",
+      "workorderdate": "2023-11-15T15:30:00Z",
+      "stops": [
+        {
+          "city": "Chicago",
+          "postalcode": "60601"
+
+        },
+        {
+          "city": "New York",
+          "postalcode": "645343"
+        }
+      ]
+    },
+    {
+      "workorderid": 3,
+      "workordernumber": "WO003",
+      "originatorcode": "ORIG003",
+      "receivercode": "RECV003",
+      "workorderdate": "2023-11-20T16:30:00Z",
+      "stops": [
+        {
+          "city": "Houston",
+          "postalcode": "77001"
+        }
+      ]
+    },
+    {
+      "workorderid": 4,
+      "workordernumber": "WO004",
+      "originatorcode": "ORIG004",
+      "receivercode": "RECV004",
+      "workorderdate": "2023-11-16T17:30:00Z",
+      "stops": [
+        {
+          "city": "San Francisco",
+          "postalcode": "94101"
+
+        }
+      ]
+    }
+  ]
+
